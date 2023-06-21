@@ -120,29 +120,15 @@ class Signups(Resource):
         return make_response(signups, 200)
     
     def post(self):
-        data = request.get_json()
-        camper_id = data.get('camper_id')
-        activity_id = data.get('activity_id')
-
-        if camper_id is None or activity_id is None:
-            abort(400, 'Validation error')
-
-        # Check if the camper and activity exist
-        camper = Camper.query.get(camper_id)
-        activity = Activity.query.get(activity_id)
-
-        if camper is None or activity is None:
-            abort(400, 'Validation error')
-
-        # Create the signup
-        signup = Signup(camper=camper, activity=activity)
-        db.session.add(signup)
-        db.session.commit()
-
-        # Return the related activity data
-        response = jsonify(activity.to_dict())
-        response.headers.set("Content-Type", "application/json")
-        return response
+        try:
+            data = request.get_json()
+            signup = Signup(**data)
+            db.session.add(signup)
+            db.session.commit()
+            return make_response(jsonify(signup.to_dict(only=("id", "time", "activity_id", "camper_id", "camper", "activity"))), 201)
+        except (Exception, IntegrityError) as e:
+            return make_response(jsonify({"error": str(e)}), 400)
+        #post
 api.add_resource(Signups, "/signups")
 
 if __name__ == '__main__':
